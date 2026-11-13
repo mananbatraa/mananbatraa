@@ -179,8 +179,9 @@ def fonts_css() -> str:
 
 
 FONT_CSS = fonts_css()
-MOTION_OFF = "*{animation:none!important}.fx{display:none}"
+MOTION_OFF = "*{animation:none!important}.fx{display:none}.still{display:inline!important}"
 BASE_CSS = """
+.still{display:none}
 .g{font-family:G,'Segoe UI',Helvetica,Arial,sans-serif}
 .mono{font-family:M,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .t{transform-box:fill-box;transform-origin:50% 50%}
@@ -205,13 +206,51 @@ def anim(name: str, dur: float, delay: float, extra: str = "both") -> str:
     return f'style="animation:{name} {dur}s {EASE} {delay:.2f}s {extra}"'
 
 
-def svg(w: int, h: int, body: str, t: dict, label: str, defs: str = "") -> str:
-    motion = MOTION_OFF if STATIC else f"@media (prefers-reduced-motion:reduce){{{MOTION_OFF}}}"
+def svg(w: int, h: int, body: str, t: dict, label: str, defs: str = "", still: bool = False) -> str:
+    motion = MOTION_OFF if (STATIC or still) else f"@media (prefers-reduced-motion:reduce){{{MOTION_OFF}}}"
+    frame = (f'<rect width="{w}" height="{h}" fill="{t["surface"]}"/>' if still else
+             f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="14" fill="{t["surface"]}" stroke="{t["border"]}"/>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
             f'role="img" aria-label="{esc(label)}"><title>{esc(label)}</title>'
-            f'<style>{FONT_CSS}{BASE_CSS}{motion}</style><defs>{defs}</defs>'
-            f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="14" fill="{t["surface"]}" '
-            f'stroke="{t["border"]}"/>{body}</svg>')
+            f'<style>{FONT_CSS}{BASE_CSS}{motion}</style><defs>{defs}</defs>{frame}{body}</svg>')
+
+
+def avatar(t: dict, x: float, y: float, size: float, delay: float = 0) -> tuple[str, str]:
+    """Illustrated monogram avatar drawn in a 100x100 box. Returns (defs, body)."""
+    k = size / 100
+    defs = (f'<linearGradient id="av-mono" x1="0" y1="0" x2="1" y2="1">'
+            f'<stop offset="0" stop-color="{t["a1"]}"/><stop offset="1" stop-color="{t["a2"]}"/></linearGradient>'
+            f'<radialGradient id="av-bg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="{t["a1"]}" stop-opacity=".22"/>'
+            f'<stop offset="1" stop-color="{t["a1"]}" stop-opacity="0"/></radialGradient>'
+            f'<clipPath id="av-clip"><circle cx="50" cy="50" r="47"/></clipPath>'
+            f'<pattern id="av-dots" width="6" height="6" patternUnits="userSpaceOnUse">'
+            f'<circle cx="1" cy="1" r=".55" fill="{t["border"]}"/></pattern>')
+    nodes = [(0, t["a1"]), (120, t["a2"]), (240, t["a3"])]
+
+    def orbit_nodes() -> str:
+        import math
+        return "".join(f'<circle cx="{50 + 41 * math.cos(math.radians(a)):.2f}" cy="{50 + 41 * math.sin(math.radians(a)):.2f}" '
+                       f'r="3.6" fill="{c}" stroke="{t["surface"]}" stroke-width="1.4"/>' for a, c in nodes)
+
+    body = (f'<g transform="translate({x} {y}) scale({k:.4f})"><g class="t" {anim("pop", .7, delay)}>'
+            f'<circle cx="50" cy="50" r="48" fill="{t["chip"]}" stroke="{t["border"]}" stroke-width="1.2"/>'
+            f'<circle cx="50" cy="50" r="47.4" fill="url(#av-bg)"/>'
+            f'<g clip-path="url(#av-clip)"><rect width="100" height="100" fill="url(#av-dots)" opacity=".7"/>'
+            # a little skyline of bars behind the monogram: "ships products"
+            + "".join(f'<rect class="tb" x="{18 + i * 9}" y="{86 - h}" width="5" height="{h}" rx="1.5" fill="{t["bar"]}" '
+                      f'{anim("growy", .6, delay + .4 + i * .05)}/>' for i, h in enumerate((8, 14, 10, 20, 12, 24, 16)))
+            + f'</g>'
+            f'<circle cx="50" cy="50" r="41" fill="none" stroke="{t["border"]}" stroke-width="1" stroke-dasharray="2 3.5">'
+            f'<animateTransform class="fx" attributeName="transform" type="rotate" from="0 50 50" to="-360 50 50" dur="40s" repeatCount="indefinite"/></circle>'
+            f'<g class="fx">{orbit_nodes()}<animateTransform attributeName="transform" type="rotate" from="0 50 50" '
+            f'to="360 50 50" dur="14s" repeatCount="indefinite"/></g>'
+            f'<g class="still">{orbit_nodes()}</g>'
+            f'<text x="50" y="60" text-anchor="middle" class="g" font-weight="700" font-size="33" letter-spacing="0.5" '
+            f'fill="url(#av-mono)">MB</text>'
+            f'<rect x="{50 + (width("MB", "grotesk-700", 33) + 1) / 2 + 2.5:.1f}" y="57.4" width="7" height="2.6" rx="1" fill="{t["a3"]}" '
+            f'style="animation:blink 1.1s steps(1) {delay + 1:.2f}s infinite"/>'
+            f'</g></g>')
+    return defs, body
 
 
 def counter(x: float, y: float, value: int, attrs: str, begin: float, dur: float = 1.2, frames: int = 16) -> str:
@@ -269,19 +308,24 @@ def hero(t: dict, s: dict, d: dict) -> str:
     cx = 36 + width(f"{USER}@github:~$ whoami", "mono-400", 13) + 3
     b.append(f'<rect x="{cx:.1f}" y="39" width="8" height="15" fill="{t["a1"]}" '
              f'style="animation:fade .01s 1s both,blink 1.1s steps(1) 1s infinite"/>')
-    # name, word by word
-    x = 34
+    # avatar, then name word by word beside it
+    av_defs, av_body = avatar(t, 34, 72, 104, delay=.25)
+    defs += av_defs
+    b.append(av_body)
+    x0 = 160
+    x = x0 - 2
     for i, word in enumerate(NAME):
         b.append(f'<text x="{x:.1f}" y="120" class="g" font-weight="700" font-size="58" fill="{t["text"]}" '
                  f'letter-spacing="-1.2" {anim("rise", .8, .35 + i * .14)}>{esc(word)}</text>')
         x += width(word + " ", "grotesk-700", 58) - 1.2 * len(word)
-    # tagline with shimmer on the accent half
-    tw = width(TAGLINE[0], "grotesk-500", 22)
+    # tagline with shimmer on the accent half, shrunk if needed to clear the diagram
+    fs = min(22.0, (555 - x0) / width("".join(TAGLINE), "grotesk-500", 1))
+    tw = width(TAGLINE[0], "grotesk-500", fs)
     b.append(f'<g {anim("rise", .7, .75)}>'
-             f'<text x="36" y="160" class="g" font-weight="500" font-size="22" fill="{t["muted"]}">{esc(TAGLINE[0])}</text>'
-             f'<text x="{36 + tw:.1f}" y="160" class="g" font-weight="500" font-size="22" fill="{t["a1"]}">{esc(TAGLINE[1])}</text>'
-             f'<text x="{36 + tw:.1f}" y="160" class="g fx" font-weight="500" font-size="22" fill="url(#shine)">{esc(TAGLINE[1])}</text></g>')
-    b.append(f'<rect class="tl" x="36" y="182" width="440" height="1.5" fill="{t["border"]}" {anim("growx", .9, 1.0)}/>')
+             f'<text x="{x0}" y="160" class="g" font-weight="500" font-size="{fs:.1f}" fill="{t["muted"]}">{esc(TAGLINE[0])}</text>'
+             f'<text x="{x0 + tw:.1f}" y="160" class="g" font-weight="500" font-size="{fs:.1f}" fill="{t["a1"]}">{esc(TAGLINE[1])}</text>'
+             f'<text x="{x0 + tw:.1f}" y="160" class="g fx" font-weight="500" font-size="{fs:.1f}" fill="url(#shine)">{esc(TAGLINE[1])}</text></g>')
+    b.append(f'<rect class="tl" x="36" y="188" width="500" height="1.5" fill="{t["border"]}" {anim("growx", .9, 1.0)}/>')
     for i, line in enumerate(META):
         y = 212 + i * 24
         col = (t["a1"], t["a2"], t["a3"])[i]
@@ -450,6 +494,11 @@ def main() -> None:
             out[f"project-{i + 1}"] = project(t, i, repo, desc, tags, s["primary"].get(repo))
         for name, content in out.items():
             (CARDS / f"{name}-{theme}.svg").write_text(content)
+        # static, full-bleed avatar to export as the GitHub profile picture (PNG)
+        av_defs, av_body = avatar(t, 20, 20, 460)
+        (ROOT / "assets").mkdir(exist_ok=True)
+        (ROOT / "assets" / f"avatar-{theme}.svg").write_text(
+            svg(500, 500, av_body, t, f"{' '.join(NAME)} avatar", av_defs, still=True))
     print(f"rendered {len(out) * 2} cards · {s['total']} contributions · {s['repos']} repos · "
           f"longest streak {d['longest']} · busiest {d['busiest']}")
 
