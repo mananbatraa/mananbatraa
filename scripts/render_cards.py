@@ -52,10 +52,15 @@ STACK = [
     ("Data", ["PySpark", "Spark SQL", "Pandas", "Parquet", "Prometheus", "Grafana"]),
     ("Frontend", ["React", "TypeScript", "Streamlit", "Vitest"]),
 ]
-PROJECTS = [  # (repo, description, tags)
+PROJECTS = [  # (repo, description, tags[, extras]); extras: title, lang (name, color), badge, url
     ("researchpilot-ai",
      "Multi-agent research assistant: four LangGraph agents search, analyze, fact-check and write source-cited reports.",
      "langgraph · fastapi · react"),
+    ("NueroChallange",
+     "Hackathon app that turns spoken classroom instructions into picture step cards for autistic and ADHD students. I built its UI.",
+     "react · supabase · groq",
+     {"title": "Step Cards", "lang": ("TypeScript", "#3178c6"), "badge": "team project",
+      "url": "https://github.com/dgupta98/NueroChallange"}),
     ("FRIDAY",
      "Job-application tracker: reads Gmail, classifies emails with Claude structured outputs and keeps a Sheet up to date.",
      "claude · gmail api · streamlit"),
@@ -65,6 +70,10 @@ PROJECTS = [  # (repo, description, tags)
     ("pyspark-data-engineering-pipeline",
      "Batch + streaming pipeline: validation with quarantine, Parquet silver/gold lake, Spark SQL reports and Kafka.",
      "pyspark · kafka · parquet"),
+    ("autonomous-code-repair-agent",
+     "Review-first repair agent: finds bug and security patterns in Python, proposes rule-based and Claude-written fixes.",
+     "ast · claude api · pytest",
+     {"title": "code-repair-agent"}),
 ]
 SKIP_LANGS = {"Jupyter Notebook", "HTML", "CSS", "SCSS", "Dockerfile", "Makefile", "Procfile",
               "Shell", "Batchfile", "PowerShell", "TeX"}
@@ -471,16 +480,23 @@ def stack(t: dict, s: dict, d: dict) -> str:
     return svg(W, H, "".join(b), t, "Toolbox and languages")
 
 
-def project(t: dict, idx: int, repo: str, desc: str, tags: str, lang) -> str:
+def project(t: dict, idx: int, repo: str, desc: str, tags: str, lang, badge: str = "", title: str = "") -> str:
     W, H = 412, 176
-    delay = .4 + idx * .15
-    color = (t["a1"], t["a2"], t["a3"], t["a1"])[idx % 4]
-    title = repo if width(repo, "grotesk-700", 19) < 330 else repo[:30] + "…"
+    delay = .4 + (idx % 2) * .15 + (idx // 2) * .1
+    color = (t["a1"], t["a2"], t["a3"])[idx % 3]
+    title = title or repo
+    title = title if width(title, "grotesk-700", 19) < 330 else title[:30] + "…"
     b = [f'<g class="t" {anim("swing", .8, delay)}>',
          f'<rect class="tl" x="24" y="20" width="26" height="3" rx="1.5" fill="{color}" {anim("growx", .5, delay + .3)}/>',
          f'<text x="24" y="50" class="g" font-weight="700" font-size="19" fill="{t["text"]}">{esc(title)}</text>',
          f'<text class="t mono" x="388" y="50" text-anchor="end" font-size="18" '
          f'fill="{color}" style="animation:nudge 3.5s ease-in-out {delay + 1:.2f}s infinite">↗</text>']
+    if badge:
+        bw = width(badge, "mono-400", 10.5) + 18
+        bx = 24 + width(title, "grotesk-700", 19) + 12
+        b.append(f'<g class="t" {anim("pop", .45, delay + .6)}><rect x="{bx:.1f}" y="34" width="{bw:.1f}" height="20" rx="10" '
+                 f'fill="none" stroke="{color}"/><text x="{bx + bw / 2:.1f}" y="47.5" text-anchor="middle" class="mono" '
+                 f'font-size="10.5" fill="{color}">{esc(badge)}</text></g>')
     for i, line in enumerate(wrap(desc, 49, 3)):
         b.append(f'<text x="24" y="{78 + i * 19}" class="mono" font-size="12" fill="{t["muted"]}">{esc(line)}</text>')
     if lang:
@@ -513,8 +529,10 @@ def main() -> None:
             "activity": activity(t, s, d),
             "stack": stack(t, s, d),
         }
-        for i, (repo, desc, tags) in enumerate(PROJECTS):
-            out[f"project-{i + 1}"] = project(t, i, repo, desc, tags, s["primary"].get(repo))
+        for i, (repo, desc, tags, *extra) in enumerate(PROJECTS):
+            ex = extra[0] if extra else {}
+            out[f"project-{i + 1}"] = project(t, i, repo, desc, tags, ex.get("lang") or s["primary"].get(repo),
+                                              ex.get("badge", ""), ex.get("title", ""))
         for name, content in out.items():
             (CARDS / f"{name}-{theme}.svg").write_text(content)
         # static, full-bleed avatar to export as the GitHub profile picture (PNG)

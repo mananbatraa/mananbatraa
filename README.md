@@ -18,9 +18,11 @@
 
 <p>
   <a href="https://github.com/mananbatraa/researchpilot-ai"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-1-dark.svg"><img alt="researchpilot-ai" src="cards/project-1-light.svg" width="49.3%"></picture></a>
-  <a href="https://github.com/mananbatraa/FRIDAY"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-2-dark.svg"><img alt="FRIDAY" src="cards/project-2-light.svg" width="49.3%"></picture></a>
-  <a href="https://github.com/mananbatraa/ai-rag-knowledge-assistant"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-3-dark.svg"><img alt="ai-rag-knowledge-assistant" src="cards/project-3-light.svg" width="49.3%"></picture></a>
-  <a href="https://github.com/mananbatraa/pyspark-data-engineering-pipeline"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-4-dark.svg"><img alt="pyspark-data-engineering-pipeline" src="cards/project-4-light.svg" width="49.3%"></picture></a>
+  <a href="https://github.com/dgupta98/NueroChallange"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-2-dark.svg"><img alt="Step Cards (team project)" src="cards/project-2-light.svg" width="49.3%"></picture></a>
+  <a href="https://github.com/mananbatraa/FRIDAY"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-3-dark.svg"><img alt="FRIDAY" src="cards/project-3-light.svg" width="49.3%"></picture></a>
+  <a href="https://github.com/mananbatraa/ai-rag-knowledge-assistant"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-4-dark.svg"><img alt="ai-rag-knowledge-assistant" src="cards/project-4-light.svg" width="49.3%"></picture></a>
+  <a href="https://github.com/mananbatraa/pyspark-data-engineering-pipeline"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-5-dark.svg"><img alt="pyspark-data-engineering-pipeline" src="cards/project-5-light.svg" width="49.3%"></picture></a>
+  <a href="https://github.com/mananbatraa/autonomous-code-repair-agent"><picture><source media="(prefers-color-scheme: dark)" srcset="cards/project-6-dark.svg"><img alt="autonomous-code-repair-agent" src="cards/project-6-light.svg" width="49.3%"></picture></a>
 </p>
 
 <picture>
