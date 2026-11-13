@@ -28,7 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CARDS = ROOT / "cards"
 DATA = ROOT / "data" / "stats.json"
 FONTS = ROOT / "fonts"
-PHOTO = ROOT / "assets" / "photo.jpg"  # optional; falls back to the illustrated monogram
+PHOTOS = {th: ROOT / "assets" / f"photo-{th}.jpg" for th in ("dark", "light")}  # optional, from stylize_photo.py
 USER = os.environ.get("GH_USER", "mananbatraa")
 STATIC = os.environ.get("STATIC") == "1"
 
@@ -218,7 +218,7 @@ def svg(w: int, h: int, body: str, t: dict, label: str, defs: str = "", still: b
 
 
 def avatar(t: dict, x: float, y: float, size: float, delay: float = 0) -> tuple[str, str]:
-    """Avatar drawn in a 100x100 box: assets/photo.jpg if present, else a monogram. Returns (defs, body)."""
+    """Avatar drawn in a 100x100 box: the themed photo if present, else a monogram. Returns (defs, body)."""
     k = size / 100
     defs = (f'<linearGradient id="av-mono" x1="0" y1="0" x2="1" y2="1">'
             f'<stop offset="0" stop-color="{t["a1"]}"/><stop offset="1" stop-color="{t["a2"]}"/></linearGradient>'
@@ -234,9 +234,10 @@ def avatar(t: dict, x: float, y: float, size: float, delay: float = 0) -> tuple[
         return "".join(f'<circle cx="{50 + 41 * math.cos(math.radians(a)):.2f}" cy="{50 + 41 * math.sin(math.radians(a)):.2f}" '
                        f'r="3.6" fill="{c}" stroke="{t["surface"]}" stroke-width="1.4"/>' for a, c in nodes)
 
-    if PHOTO.exists():  # photo avatar: the picture inside a gradient ring with orbiting accent dots
+    photo = PHOTOS["dark" if t is THEMES["dark"] else "light"]
+    if photo.exists():  # photo avatar: the picture inside a gradient ring with orbiting accent dots
         import math
-        b64 = base64.b64encode(PHOTO.read_bytes()).decode()
+        b64 = base64.b64encode(photo.read_bytes()).decode()
         defs += (f'<clipPath id="av-photo"><circle cx="50" cy="50" r="43"/></clipPath>'
                  f'<linearGradient id="av-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{t["a1"]}"/>'
                  f'<stop offset=".55" stop-color="{t["a2"]}"/><stop offset="1" stop-color="{t["a3"]}"/></linearGradient>')
