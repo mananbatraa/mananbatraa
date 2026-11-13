@@ -1,0 +1,4 @@
+preview.html
+fonts/*.woff2
+__pycache__/
+.DS_Store
