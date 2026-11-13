@@ -13,6 +13,7 @@ Auth: GITHUB_TOKEN / GH_TOKEN env var, else `gh auth token`. Standard library on
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import html
 import json
@@ -27,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CARDS = ROOT / "cards"
 DATA = ROOT / "data" / "stats.json"
 FONTS = ROOT / "fonts"
+PHOTO = ROOT / "assets" / "photo.jpg"  # optional; falls back to the illustrated monogram
 USER = os.environ.get("GH_USER", "mananbatraa")
 STATIC = os.environ.get("STATIC") == "1"
 
@@ -216,7 +218,7 @@ def svg(w: int, h: int, body: str, t: dict, label: str, defs: str = "", still: b
 
 
 def avatar(t: dict, x: float, y: float, size: float, delay: float = 0) -> tuple[str, str]:
-    """Illustrated monogram avatar drawn in a 100x100 box. Returns (defs, body)."""
+    """Avatar drawn in a 100x100 box: assets/photo.jpg if present, else a monogram. Returns (defs, body)."""
     k = size / 100
     defs = (f'<linearGradient id="av-mono" x1="0" y1="0" x2="1" y2="1">'
             f'<stop offset="0" stop-color="{t["a1"]}"/><stop offset="1" stop-color="{t["a2"]}"/></linearGradient>'
@@ -231,6 +233,26 @@ def avatar(t: dict, x: float, y: float, size: float, delay: float = 0) -> tuple[
         import math
         return "".join(f'<circle cx="{50 + 41 * math.cos(math.radians(a)):.2f}" cy="{50 + 41 * math.sin(math.radians(a)):.2f}" '
                        f'r="3.6" fill="{c}" stroke="{t["surface"]}" stroke-width="1.4"/>' for a, c in nodes)
+
+    if PHOTO.exists():  # photo avatar: the picture inside a gradient ring with orbiting accent dots
+        import math
+        b64 = base64.b64encode(PHOTO.read_bytes()).decode()
+        defs += (f'<clipPath id="av-photo"><circle cx="50" cy="50" r="43"/></clipPath>'
+                 f'<linearGradient id="av-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{t["a1"]}"/>'
+                 f'<stop offset=".55" stop-color="{t["a2"]}"/><stop offset="1" stop-color="{t["a3"]}"/></linearGradient>')
+        dots = "".join(f'<circle cx="{50 + 47.5 * math.cos(math.radians(a)):.2f}" cy="{50 + 47.5 * math.sin(math.radians(a)):.2f}" '
+                       f'r="3.2" fill="{c}" stroke="{t["surface"]}" stroke-width="1.4"/>' for a, c in nodes)
+        body = (f'<g transform="translate({x} {y}) scale({k:.4f})"><g class="t" {anim("pop", .7, delay)}>'
+                f'<circle cx="50" cy="50" r="47.5" fill="none" stroke="{t["border"]}" stroke-width="1" stroke-dasharray="1.5 3">'
+                f'<animateTransform class="fx" attributeName="transform" type="rotate" from="0 50 50" to="-360 50 50" '
+                f'dur="60s" repeatCount="indefinite"/></circle>'
+                f'<circle cx="50" cy="50" r="44.2" fill="{t["chip"]}" stroke="url(#av-ring)" stroke-width="2.2"/>'
+                f'<image href="data:image/jpeg;base64,{b64}" x="7" y="7" width="86" height="86" '
+                f'clip-path="url(#av-photo)" preserveAspectRatio="xMidYMid slice"/>'
+                f'<g class="fx">{dots}<animateTransform attributeName="transform" type="rotate" from="20 50 50" '
+                f'to="380 50 50" dur="16s" repeatCount="indefinite"/></g>'
+                f'<g class="still" transform="rotate(20 50 50)">{dots}</g></g></g>')
+        return defs, body
 
     body = (f'<g transform="translate({x} {y}) scale({k:.4f})"><g class="t" {anim("pop", .7, delay)}>'
             f'<circle cx="50" cy="50" r="48" fill="{t["chip"]}" stroke="{t["border"]}" stroke-width="1.2"/>'
